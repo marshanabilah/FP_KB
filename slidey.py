@@ -1,8 +1,8 @@
 import pygame, sys, random
 from pygame.locals import *
 
-BOARDWIDTH = 4 
-BOARDHEIGHT = 4
+BOARDWIDTH = 4  
+BOARDHEIGHT = 4 
 TILESIZE = 80
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
@@ -36,6 +36,7 @@ RIGHT = 'right'
 
 # initialize pygame and create window
 pygame.init()
+pygame.mixer.init() # initialize for sound
 DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 pygame.display.set_caption('Slidey Puzzle')
 BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
@@ -61,6 +62,8 @@ def menu():
     DISPLAYSURF.blit(background, background_rect)
     DISPLAYSURF.blit(title, (0,20))
     
+    pygame.draw.rect(DISPLAYSURF, LIGHTCORAL, (130, 244, 380, 35))
+    pygame.draw.rect(DISPLAYSURF, LIGHTCORAL, (170, 295, 310, 35))
     draw_text(DISPLAYSURF, "PRESS [ENTER] TO BEGIN", 35, WINDOWWIDTH/2, WINDOWHEIGHT/2, WHITE)
     draw_text(DISPLAYSURF, "PRESS [Q] TO QUIT", 35, WINDOWWIDTH/2, (WINDOWHEIGHT/2) + 50, WHITE)
 
@@ -123,7 +126,7 @@ def isValidMove(board, move):
 
 def getRandomMove(board, lastMove=None):
     validMoves = [UP, DOWN, LEFT, RIGHT]
-    
+
     if lastMove == UP or not isValidMove(board, DOWN):
         validMoves.remove(DOWN)
     if lastMove == DOWN or not isValidMove(board, UP):
@@ -143,7 +146,6 @@ def getLeftTopOfTile(tileX, tileY):
 
 
 def getSpotClicked(board, x, y):
-
     for tileX in range(len(board)):
         for tileY in range(len(board[0])):
             left, top = getLeftTopOfTile(tileX, tileY)
@@ -154,7 +156,6 @@ def getSpotClicked(board, x, y):
 
 
 def drawTile(tilex, tiley, number, adjx=0, adjy=0):
-
     left, top = getLeftTopOfTile(tilex, tiley)
     pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, top + adjy, TILESIZE, TILESIZE))
     textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
@@ -186,13 +187,13 @@ def drawBoard(board, message):
     height = BOARDHEIGHT * TILESIZE
     pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4)
 
-#     DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
-#     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
-#     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
+    DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
+    DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
+    DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
 
 
 def slideAnimation(board, direction, message, animationSpeed):
-
+    
     blankx, blanky = getBlankPosition(board)
     if direction == UP:
         movex = blankx
@@ -209,12 +210,11 @@ def slideAnimation(board, direction, message, animationSpeed):
 
     drawBoard(board, message)
     baseSurf = DISPLAYSURF.copy()
- 
+    
     moveLeft, moveTop = getLeftTopOfTile(movex, movey)
     pygame.draw.rect(baseSurf, BGCOLOR, (moveLeft, moveTop, TILESIZE, TILESIZE))
 
     for i in range(0, TILESIZE, animationSpeed):
-        # animate the tile sliding over
         checkForQuit()
         DISPLAYSURF.blit(baseSurf, (0, 0))
         if direction == UP:
@@ -235,7 +235,7 @@ def generateNewPuzzle(numSlides):
     board = getStartingBoard()
     drawBoard(board, '')
     pygame.display.update()
-    pygame.time.wait(500) 
+    pygame.time.wait(500) # pause 500 milliseconds for effect
     lastMove = None
     for i in range(numSlides):
         move = getRandomMove(board, lastMove)
@@ -247,7 +247,7 @@ def generateNewPuzzle(numSlides):
 
 
 def resetAnimation(board, allMoves):
-    revAllMoves = allMoves[:] 
+    revAllMoves = allMoves[:] # gets a copy of the list
     revAllMoves.reverse()
 
     for move in revAllMoves:
@@ -265,8 +265,7 @@ def resetAnimation(board, allMoves):
 
 def main(): 
     '''main loop'''
-    #### load all game images ####
-    # draw background rectangle first
+    global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT
     
     background = pygame.image.load(r'C:\Users\lenovo\Pictures\wheat.jpg') 
     background = pygame.transform.scale(background, (640,480))
@@ -279,16 +278,19 @@ def main():
         if show_menu:
             menu()
             pygame.time.delay(1500)
+            RESET_SURF, RESET_RECT = makeText('Reset',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 90)
+            NEW_SURF,   NEW_RECT   = makeText('New Game', TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 60)
+            SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
+
             mainBoard, solutionSeq = generateNewPuzzle(80)
             SOLVEDBOARD = getStartingBoard() 
             allMoves = [] 
-        
+           
         show_menu = False
         FPSCLOCK.tick(FPS) # number of FPS per loop
         pygame.display.flip()
-        
-        
-        slideTo = None 
+             
+        slideTo = None # the direction, if any, a tile should slide
         msg = 'Click tile or press arrow keys to slide.' 
         if mainBoard == SOLVEDBOARD:
             msg = 'Solved!'
@@ -311,7 +313,6 @@ def main():
                         resetAnimation(mainBoard, solutionSeq + allMoves) 
                         allMoves = []
                 else:
- 
                     blankx, blanky = getBlankPosition(mainBoard)
                     if spotx == blankx + 1 and spoty == blanky:
                         slideTo = LEFT
@@ -339,8 +340,6 @@ def main():
         pygame.display.update()
         FPSCLOCK.tick(FPS)
         
-         # done after drawing everything to the screen
-       # FPSCLOCK.tick(FPS) # number of FPS per loop
         pygame.display.flip()
         
         
