@@ -1,8 +1,8 @@
 import pygame, sys, random
 from pygame.locals import *
 
-BOARDWIDTH = 4  
-BOARDHEIGHT = 4 
+BOARDWIDTH = 4 
+BOARDHEIGHT = 4
 TILESIZE = 80
 WINDOWWIDTH = 640
 WINDOWHEIGHT = 480
@@ -34,89 +34,49 @@ DOWN = 'down'
 LEFT = 'left'
 RIGHT = 'right'
 
-def main():
-    global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT
+# initialize pygame and create window
+pygame.init()
+DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+pygame.display.set_caption('Slidey Puzzle')
+BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
 
-    pygame.init()
-    FPSCLOCK = pygame.time.Clock()
-    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-    pygame.display.set_caption('Slidey')
-    BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
-
+FPSCLOCK = pygame.time.Clock() # For syncing the FPS
     
-    RESET_SURF, RESET_RECT = makeText('Reset',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 90)
-    NEW_SURF,   NEW_RECT   = makeText('New Game', TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 60)
-    SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
+def draw_text(surface, text, size, x, y, color):
+    '''draw text to screen'''
+    font = pygame.font.Font(pygame.font.match_font('arial'), size)
+    text_surface = font.render(text, True, color)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surface.blit(text_surface, text_rect)
 
-    mainBoard, solutionSeq = generateNewPuzzle(80)
-    SOLVEDBOARD = getStartingBoard() 
-    allMoves = [] 
+def menu():
+    '''display main menu'''    
+    title = pygame.image.load(r'C:\Users\lenovo\Pictures\Slidey_Puzzle.png')
+    title = pygame.transform.scale(title, (WINDOWWIDTH, 81 * 2))
+    background = pygame.image.load(r'C:\Users\lenovo\Pictures\wheat.jpg') 
+    background = pygame.transform.scale(background, (640,480))
+    background_rect = background.get_rect()
 
+    DISPLAYSURF.blit(background, background_rect)
+    DISPLAYSURF.blit(title, (0,20))
+    
+    draw_text(DISPLAYSURF, "PRESS [ENTER] TO BEGIN", 35, WINDOWWIDTH/2, WINDOWHEIGHT/2, WHITE)
+    draw_text(DISPLAYSURF, "PRESS [Q] TO QUIT", 35, WINDOWWIDTH/2, (WINDOWHEIGHT/2) + 50, WHITE)
+
+    pygame.display.update()
+                    
     while True:
-        slideTo = None 
-        msg = 'Click tile or press arrow keys to slide.' 
-        if mainBoard == SOLVEDBOARD:
-            msg = 'Solved!'
-
-        drawBoard(mainBoard, msg)
-
-        checkForQuit()
-        for event in pygame.event.get(): 
-            if event.type == MOUSEBUTTONUP:
-                spotx, spoty = getSpotClicked(mainBoard, event.pos[0], event.pos[1])
-
-                if (spotx, spoty) == (None, None):
-                    if RESET_RECT.collidepoint(event.pos):
-                        resetAnimation(mainBoard, allMoves) 
-                        allMoves = []
-                    elif NEW_RECT.collidepoint(event.pos):
-                        mainBoard, solutionSeq = generateNewPuzzle(80) 
-                        allMoves = []
-                    elif SOLVE_RECT.collidepoint(event.pos):
-                        resetAnimation(mainBoard, solutionSeq + allMoves) 
-                        allMoves = []
-                else:
-                    blankx, blanky = getBlankPosition(mainBoard)
-                    if spotx == blankx + 1 and spoty == blanky:
-                        slideTo = LEFT
-                    elif spotx == blankx - 1 and spoty == blanky:
-                        slideTo = RIGHT
-                    elif spotx == blankx and spoty == blanky + 1:
-                        slideTo = UP
-                    elif spotx == blankx and spoty == blanky - 1:
-                        slideTo = DOWN
-
-            elif event.type == KEYUP:
-                if event.key in (K_LEFT, K_a) and isValidMove(mainBoard, LEFT):
-                    slideTo = LEFT
-                elif event.key in (K_RIGHT, K_d) and isValidMove(mainBoard, RIGHT):
-                    slideTo = RIGHT
-                elif event.key in (K_UP, K_w) and isValidMove(mainBoard, UP):
-                    slideTo = UP
-                elif event.key in (K_DOWN, K_s) and isValidMove(mainBoard, DOWN):
-                    slideTo = DOWN
-
-        if slideTo:
-            slideAnimation(mainBoard, slideTo, 'Click tile or press arrow keys to slide.', 8) 
-            makeMove(mainBoard, slideTo)
-            allMoves.append(slideTo) 
-        pygame.display.update()
-        FPSCLOCK.tick(FPS)
-
-
-def terminate():
-    pygame.quit()
-    sys.exit()
-
-
-def checkForQuit():
-    for event in pygame.event.get(QUIT): 
-        terminate() 
-    for event in pygame.event.get(KEYUP):
-        if event.key == K_ESCAPE:
-            terminate() 
-        pygame.event.post(event) 
-
+        event = pygame.event.poll()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                break
+            elif event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()
+        elif event.type == QUIT:
+            pygame.quit()
+            sys.exit()    
 
 def getStartingBoard():
     counter = 1
@@ -163,7 +123,7 @@ def isValidMove(board, move):
 
 def getRandomMove(board, lastMove=None):
     validMoves = [UP, DOWN, LEFT, RIGHT]
-
+    
     if lastMove == UP or not isValidMove(board, DOWN):
         validMoves.remove(DOWN)
     if lastMove == DOWN or not isValidMove(board, UP):
@@ -183,6 +143,7 @@ def getLeftTopOfTile(tileX, tileY):
 
 
 def getSpotClicked(board, x, y):
+
     for tileX in range(len(board)):
         for tileY in range(len(board[0])):
             left, top = getLeftTopOfTile(tileX, tileY)
@@ -193,6 +154,7 @@ def getSpotClicked(board, x, y):
 
 
 def drawTile(tilex, tiley, number, adjx=0, adjy=0):
+
     left, top = getLeftTopOfTile(tilex, tiley)
     pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, top + adjy, TILESIZE, TILESIZE))
     textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
@@ -224,12 +186,13 @@ def drawBoard(board, message):
     height = BOARDHEIGHT * TILESIZE
     pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4)
 
-    DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
-    DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
-    DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
+#     DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
+#     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
+#     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
 
 
 def slideAnimation(board, direction, message, animationSpeed):
+
     blankx, blanky = getBlankPosition(board)
     if direction == UP:
         movex = blankx
@@ -246,11 +209,12 @@ def slideAnimation(board, direction, message, animationSpeed):
 
     drawBoard(board, message)
     baseSurf = DISPLAYSURF.copy()
-   
+ 
     moveLeft, moveTop = getLeftTopOfTile(movex, movey)
     pygame.draw.rect(baseSurf, BGCOLOR, (moveLeft, moveTop, TILESIZE, TILESIZE))
 
     for i in range(0, TILESIZE, animationSpeed):
+        # animate the tile sliding over
         checkForQuit()
         DISPLAYSURF.blit(baseSurf, (0, 0))
         if direction == UP:
@@ -296,8 +260,103 @@ def resetAnimation(board, allMoves):
         elif move == LEFT:
             oppositeMove = RIGHT
         slideAnimation(board, oppositeMove, '', animationSpeed=int(TILESIZE / 2))
-        makeMove(board, oppositeMove)
+        makeMove(board, oppositeMove) 
+                        
 
+def main(): 
+    '''main loop'''
+    #### load all game images ####
+    # draw background rectangle first
+    
+    background = pygame.image.load(r'C:\Users\lenovo\Pictures\wheat.jpg') 
+    background = pygame.transform.scale(background, (640,480))
+    background_rect = background.get_rect() 
+    
+    running = True
+    show_menu = True        
+    while running: # main game loop
+        
+        if show_menu:
+            menu()
+            pygame.time.delay(1500)
+            mainBoard, solutionSeq = generateNewPuzzle(80)
+            SOLVEDBOARD = getStartingBoard() 
+            allMoves = [] 
+        
+        show_menu = False
+        FPSCLOCK.tick(FPS) # number of FPS per loop
+        pygame.display.flip()
+        
+        
+        slideTo = None 
+        msg = 'Click tile or press arrow keys to slide.' 
+        if mainBoard == SOLVEDBOARD:
+            msg = 'Solved!'
 
-if __name__ == '__main__':
+        drawBoard(mainBoard, msg)
+
+        checkForQuit()
+        for event in pygame.event.get(): 
+            if event.type == MOUSEBUTTONUP:
+                spotx, spoty = getSpotClicked(mainBoard, event.pos[0], event.pos[1])
+
+                if (spotx, spoty) == (None, None):
+                    if RESET_RECT.collidepoint(event.pos):
+                        resetAnimation(mainBoard, allMoves) 
+                        allMoves = []
+                    elif NEW_RECT.collidepoint(event.pos):
+                        mainBoard, solutionSeq = generateNewPuzzle(80) 
+                        allMoves = []
+                    elif SOLVE_RECT.collidepoint(event.pos):
+                        resetAnimation(mainBoard, solutionSeq + allMoves) 
+                        allMoves = []
+                else:
+ 
+                    blankx, blanky = getBlankPosition(mainBoard)
+                    if spotx == blankx + 1 and spoty == blanky:
+                        slideTo = LEFT
+                    elif spotx == blankx - 1 and spoty == blanky:
+                        slideTo = RIGHT
+                    elif spotx == blankx and spoty == blanky + 1:
+                        slideTo = UP
+                    elif spotx == blankx and spoty == blanky - 1:
+                        slideTo = DOWN
+
+            elif event.type == KEYUP:
+                if event.key in (K_LEFT, K_a) and isValidMove(mainBoard, LEFT):
+                    slideTo = LEFT
+                elif event.key in (K_RIGHT, K_d) and isValidMove(mainBoard, RIGHT):
+                    slideTo = RIGHT
+                elif event.key in (K_UP, K_w) and isValidMove(mainBoard, UP):
+                    slideTo = UP
+                elif event.key in (K_DOWN, K_s) and isValidMove(mainBoard, DOWN):
+                    slideTo = DOWN
+
+        if slideTo:
+            slideAnimation(mainBoard, slideTo, 'Click tile or press arrow keys to slide.', 8) 
+            makeMove(mainBoard, slideTo)
+            allMoves.append(slideTo) # record the slide
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
+        
+         # done after drawing everything to the screen
+       # FPSCLOCK.tick(FPS) # number of FPS per loop
+        pygame.display.flip()
+        
+        
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+def checkForQuit():
+    for event in pygame.event.get(QUIT): 
+        terminate() 
+    for event in pygame.event.get(KEYUP): 
+        if event.key == K_ESCAPE:
+            terminate() 
+        pygame.event.post(event) 
+
+        
+
+if __name__ == "__main__":
     main()
